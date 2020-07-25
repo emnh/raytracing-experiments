@@ -164,7 +164,7 @@ const ray = function(x, y, sampleCount, depth) {
 
   let lc = 0.0;
 
-  for (let i = -1; i < sampleCount; i++) {
+  for (let i = 0; i < sampleCount; i++) {
     const angle = 
       i == -1 ?
         Math.atan2(light.y - y, light.x - x) :
@@ -227,21 +227,22 @@ const ray = function(x, y, sampleCount, depth) {
     } else if (hitObj.type == "light") {
       const d2 = euclid(hit, { x: x, y: y }) / maxDist;
       const d = 1.0 - d2;
-      lc = 1.0 / sampleCount;
+      const lc = 1.0 / sampleCount;
       ret.r += lc * (hitObj.color >>> 16) & 0xFF;
       ret.g += lc * (hitObj.color >>> 8) & 0xFF;
       ret.b += lc * (hitObj.color) & 0xFF;
       ret.a += lc;
       ret.dist = d2;
     } else if (hitObj.type == "solid") {
+      const result = ray(hit.x, hit.y, 1, depth + 1) / sampleCount;
       const d2 = euclid(hit, { x: x, y: y }) / maxDist;
       const d = 1.0 - d2;
-      lc = 0.5 * 1.0 / sampleCount;
-      ret.r += lc * (hitObj.color >>> 16) & 0xFF;
-      ret.g += lc * (hitObj.color >>> 8) & 0xFF;
-      ret.b += lc * (hitObj.color) & 0xFF;
-      ret.a += lc;
-      ret.dist = d2;
+      const lc = 1.0 / sampleCount;
+      ret.r += lc * 0.5 * (result.r + (hitObj.color >>> 16) & 0xFF);
+      ret.g += lc * 0.5 * (result.g + (hitObj.color >>> 8) & 0xFF);
+      ret.b += lc * 0.5 * (result.b + (hitObj.color >>> 0) & 0xFF);
+      ret.a += lc * result.a;
+      ret.dist = result.dist + dt / maxDist;
     }
   }
   if (depth === -10) {

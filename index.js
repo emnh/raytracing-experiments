@@ -57,10 +57,10 @@ function interceptCircleLineSeg(circle, line){
 
 
 const f = function(data, x, y, rgba) {
-  data[(y * height + x) * colors + 0] = rgba.r(x, y) * 255;
-  data[(y * height + x) * colors + 1] = rgba.g(x, y) * 255;
-  data[(y * height + x) * colors + 2] = rgba.b(x, y) * 255;
-  data[(y * height + x) * colors + 3] = rgba.a(x, y) * 255;
+  data[(y * height + x) * colors + 0] = rgba.r * 255;
+  data[(y * height + x) * colors + 1] = rgba.g * 255;
+  data[(y * height + x) * colors + 2] = rgba.b * 255;
+  data[(y * height + x) * colors + 3] = rgba.a * 255;
 };
 
 const graphics = new PIXI.Graphics();
@@ -126,14 +126,14 @@ const euclid = function(a, b) {
 };
 
 const objects = [
+  { x: 400, y: 100, r: 50, color: 0x0000FF, type: "solid" },
   circle,
   light
 ];
 
-drawCircle(light);
-drawCircle(circle);
-
-// const dist = Math.sqrt(circle.x - light.x, circle.y - light.y) - light.r - circle.r;
+for (obj of objects) {
+  drawCircle(obj);
+}
 
 app.stage.addChild(graphics);
 
@@ -149,6 +149,14 @@ const maxDist = euclid({x: 0, y: 0}, {x: width, y: height});
 const sampleCount = 1;
 
 const ray = function(x, y, sampleCount, depth) {
+
+  const ret = {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 0.0,
+    dist: 1.0e20
+  };
 
   if (depth > 4) {
     return 0.0;
@@ -209,13 +217,41 @@ const ray = function(x, y, sampleCount, depth) {
           (height - y) / dir.y;
       const dt = Math.min(dx, dy);
       const edgePoint = { x: orig.x + dt * dir.x, y: orig.y + dt * dir.y };
-      lc += 0.75 * ray(edgePoint.x, edgePoint.y, 1, depth + 1) / sampleCount;
+      const result = ray(edgePoint.x, edgePoint.y, 1, depth + 1) / sampleCount;
+      const lc = 1.0 / sampleCount;
+      ret.r += lc * result.r;
+      ret.g += lc * result.g;
+      ret.b += lc * result.b;
+      ret.a += lc * result.a;
+      ret.dist = result.dist + dt / maxDist;
     } else if (hitObj.type == "light") {
-      const d = 1.0 - euclid(hit, { x: x, y: y }) / maxDist;
-      lc += directMul * d / sampleCount;
+      const d2 = euclid(hit, { x: x, y: y }) / maxDist;
+      const d = 1.0 - d2;
+      lc = 1.0 / sampleCount;
+      ret.r += lc * (hitObj.color >>> 16) & 0xFF;
+      ret.g += lc * (hitObj.color >>> 8) & 0xFF;
+      ret.b += lc * (hitObj.color) & 0xFF;
+      ret.a += lc;
+      ret.dist = d2;
+    } else if (hitObj.type == "solid") {
+      const d2 = euclid(hit, { x: x, y: y }) / maxDist;
+      const d = 1.0 - d2;
+      lc = 0.5 * 1.0 / sampleCount;
+      ret.r += lc * (hitObj.color >>> 16) & 0xFF;
+      ret.g += lc * (hitObj.color >>> 8) & 0xFF;
+      ret.b += lc * (hitObj.color) & 0xFF;
+      ret.a += lc;
+      ret.dist = d2;
     }
   }
-  return lc;
+  if (depth === -10) {
+    const lc = 1.0 - ret.dist;
+    ret.r *= lc;
+    ret.g *= lc;
+    ret.b *= lc;
+    ret.a *= lc;
+  }
+  return ret;
 };
 
 const rgbaLight = {
@@ -229,7 +265,8 @@ const rgba = rgbaLight;
 
 for (let x = 0; x < width; x++) {
   for (let y = 0; y < height; y++) {
-    f(data, x, y, rgba);
+    const ret = ray(x, y, sampleCount, 0);
+    f(data, x, y, ret);
   }
 }
 

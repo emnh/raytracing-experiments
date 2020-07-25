@@ -149,7 +149,7 @@ const rgbaTest = {
 
 const maxDist = euclid({x: 0, y: 0}, {x: width, y: height});
 
-const sampleCount = 1;
+const sampleCount = 10;
 
 const ray = function(x, y, sampleCount, depth) {
 
@@ -157,8 +157,7 @@ const ray = function(x, y, sampleCount, depth) {
     r: 0.0,
     g: 0.0,
     b: 0.0,
-    a: 0.0,
-    dist: 1.0e20
+    a: 0.0
   };
 
   if (depth > 4) {
@@ -171,8 +170,8 @@ const ray = function(x, y, sampleCount, depth) {
     const angle = 
       i == -1 ?
         Math.atan2(light.y - y, light.x - x) :
-        //(i + Math.random()) / sampleCount * 2.0 * Math.PI;
         (i + Math.random()) / sampleCount * 2.0 * Math.PI;
+        //(2.0 * Math.PI * (sampleCount * i + Math.random()));
     let hit = false;
     let hitObj = false;
 
@@ -185,6 +184,7 @@ const ray = function(x, y, sampleCount, depth) {
     };
 
     let mind = maxDist;
+    let loopdist = 0.0;
 
     for (obj of objects) {      
       const circleObj = {
@@ -195,7 +195,7 @@ const ray = function(x, y, sampleCount, depth) {
       const result = interceptCircleLineSeg(circleObj, line);
 
       if (result.length > 0) {
-        newhit = result[0];
+        newhit = result[Math.floor(Math.random() * result.length)];
         const d = euclid(newhit, orig);
         if (d < mind) {
           hit = newhit;
@@ -208,6 +208,8 @@ const ray = function(x, y, sampleCount, depth) {
     }
     const directMul = i == -1 ? 0.5 : 1.0;
 
+    const lc = 1.0 / sampleCount;
+    const f = 1.0; // / sampleCount;
     if (hit === false) {
       //const edgePoint = { x: 0.0, y: 0.0 };
       const dx = 
@@ -220,42 +222,55 @@ const ray = function(x, y, sampleCount, depth) {
           (height - y) / dir.y;
       const dt = Math.min(dx, dy);
       const edgePoint = { x: orig.x + dt * dir.x, y: orig.y + dt * dir.y };
-      const result = ray(edgePoint.x, edgePoint.y, 0, depth + 1) / sampleCount;
-      const lc = 1.0 / sampleCount;
+      const result = ray(edgePoint.x, edgePoint.y, 0, depth + 1);
+
       ret.r += result.r;
       ret.g += result.g;
       ret.b += result.b;
-      ret.a += lc * result.a;
-      ret.dist = result.dist + dt / maxDist;
-    } else if (hitObj.type == "light") {
-      const d2 = euclid(hit, { x: x, y: y }) / maxDist;
-      const d = 1.0 - d2;
-      const lc = 1.0 / sampleCount;
-      ret.r += (hitObj.color >>> 16) & 0xFF;
-      ret.g += (hitObj.color >>> 8) & 0xFF;
-      ret.b += (hitObj.color) & 0xFF;
-      ret.a += lc;
-      ret.dist = d;
-    } else if (hitObj.type == "solid") {
-      const result = ray(hit.x, hit.y, 0, depth + 1) / sampleCount;
-      const d2 = euclid(hit, { x: x, y: y }) / maxDist;
-      const d = 1.0 - d2;
-      const lc = 1.0 / sampleCount;
-      ret.r += 0.5 * (result.r + (hitObj.color >>> 16) & 0xFF);
-      ret.g += 0.5 * (result.g + (hitObj.color >>> 8) & 0xFF);
-      ret.b += 0.5 * (result.b + (hitObj.color >>> 0) & 0xFF);
-      ret.a += lc * result.a;
-      ret.dist = result.dist + dt / maxDist;
+      ret.a = result.a * dt / maxDist;
+      //ret.a += lc * result.a * f;
+
+      if (dt == dx) {
+        if (dir.x < 0.0) {
+          ret.r = 0.5;
+        } else {
+          ret.r = 0.25;
+        }
+      } else if (dt == dy) {
+        if (dir.y < 0.0) {
+          ret.b = 0.5;
+        } else {
+          ret.b = 0.25;
+        }
+      }
+
+      //loopdist += (result.dist + dt / maxDist) / sampleCount;
+      //ret.dist = result.dist + dt / maxDist;
     } else {
-      
+      const hitDist = euclid(hit, { x: x, y: y }) / maxDist;
+      if (hitObj.type == "light") {
+        ret.r += (hitObj.color >>> 16) & 0xFF;
+        ret.g += (hitObj.color >>> 8) & 0xFF;
+        ret.b += (hitObj.color) & 0xFF;
+        //ret.a += 1.0 / sampleCount;
+        //ret.dist = hitDist;
+        //loopdist += hitDist;
+        ret.a += hitDist * lc;
+      } else if (hitObj.type == "solid") {
+        const result =
+          ray(
+            Math.round(hit.x + (2.0 * Math.random - 1.0)),
+            Math.round(hit.y + (2.0 * Math.random - 1.0), 0, depth + 1);
+        ret.r += 1 * (result.r * f + (hitObj.color >>> 16) & 0xFF);
+        ret.g += 1 * (result.g * f + (hitObj.color >>> 8) & 0xFF);
+        ret.b += 1 * (result.b * f + (hitObj.color >>> 0) & 0xFF);
+        //ret.a += lc * result.a * f;
+        ret.a += result.a * hitDist * lc;
+        //loopdist += result.dist + hitDist;
+      } else {
+        
+      }
     }
-  }
-  if (depth === -10) {
-    const lc = 1.0 - ret.dist;
-    ret.r *= lc;
-    ret.g *= lc;
-    ret.b *= lc;
-    ret.a *= lc;
   }
   const lc = 1.0;
 
@@ -270,7 +285,7 @@ const ray = function(x, y, sampleCount, depth) {
   ret.r = clamp(ret.r * lc, 0.0, 1.0);
   ret.g = clamp(ret.g * lc, 0.0, 1.0);
   ret.b = clamp(ret.b * lc, 0.0, 1.0);
-  ret.a = clamp(ret.dist * ret.a * lc, 0.0, 1.0);
+  ret.a = clamp(ret.a * lc, 0.0, 1.0);
   return ret;
 };
 

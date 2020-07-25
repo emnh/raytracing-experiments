@@ -18,6 +18,8 @@ canvas.style = "position: absolute; left: 0; ";
 const ctx = canvas.getContext('2d');
 var myImageData = ctx.createImageData(width, height);
 
+$("body").append("<h1>" + (new Date()).toTimeString() + "</h1>");
+
 const colors = 4;
 
 const data = myImageData.data;
@@ -164,7 +166,7 @@ const ray = function(x, y, sampleCount, depth) {
 
   let lc = 0.0;
 
-  for (let i = 0; i < sampleCount; i++) {
+  for (let i = -1; i < sampleCount; i++) {
     const angle = 
       i == -1 ?
         Math.atan2(light.y - y, light.x - x) :
@@ -217,32 +219,34 @@ const ray = function(x, y, sampleCount, depth) {
           (height - y) / dir.y;
       const dt = Math.min(dx, dy);
       const edgePoint = { x: orig.x + dt * dir.x, y: orig.y + dt * dir.y };
-      const result = ray(edgePoint.x, edgePoint.y, 1, depth + 1) / sampleCount;
+      const result = ray(edgePoint.x, edgePoint.y, 0, depth + 1) / sampleCount;
       const lc = 1.0 / sampleCount;
-      ret.r += lc * result.r;
-      ret.g += lc * result.g;
-      ret.b += lc * result.b;
+      ret.r += result.r;
+      ret.g += result.g;
+      ret.b += result.b;
       ret.a += lc * result.a;
       ret.dist = result.dist + dt / maxDist;
     } else if (hitObj.type == "light") {
       const d2 = euclid(hit, { x: x, y: y }) / maxDist;
       const d = 1.0 - d2;
       const lc = 1.0 / sampleCount;
-      ret.r += lc * (hitObj.color >>> 16) & 0xFF;
-      ret.g += lc * (hitObj.color >>> 8) & 0xFF;
-      ret.b += lc * (hitObj.color) & 0xFF;
+      ret.r += (hitObj.color >>> 16) & 0xFF;
+      ret.g += (hitObj.color >>> 8) & 0xFF;
+      ret.b += (hitObj.color) & 0xFF;
       ret.a += lc;
       ret.dist = d2;
     } else if (hitObj.type == "solid") {
-      const result = ray(hit.x, hit.y, 1, depth + 1) / sampleCount;
+      const result = ray(hit.x, hit.y, 0, depth + 1) / sampleCount;
       const d2 = euclid(hit, { x: x, y: y }) / maxDist;
       const d = 1.0 - d2;
       const lc = 1.0 / sampleCount;
-      ret.r += lc * 0.5 * (result.r + (hitObj.color >>> 16) & 0xFF);
-      ret.g += lc * 0.5 * (result.g + (hitObj.color >>> 8) & 0xFF);
-      ret.b += lc * 0.5 * (result.b + (hitObj.color >>> 0) & 0xFF);
+      ret.r += 0.5 * (result.r + (hitObj.color >>> 16) & 0xFF);
+      ret.g += 0.5 * (result.g + (hitObj.color >>> 8) & 0xFF);
+      ret.b += 0.5 * (result.b + (hitObj.color >>> 0) & 0xFF);
       ret.a += lc * result.a;
       ret.dist = result.dist + dt / maxDist;
+    } else {
+      
     }
   }
   if (depth === -10) {
@@ -252,6 +256,20 @@ const ray = function(x, y, sampleCount, depth) {
     ret.b *= lc;
     ret.a *= lc;
   }
+  const lc = 1.0;
+
+  //ret.r *= lc;
+  //ret.g *= lc;
+  //ret.b *= lc;
+
+  const clamp = function(x, a, b) {
+    return Math.min(Math.max(x, a), b);
+  };
+
+  ret.r = clamp(ret.r * lc, 0.0, 1.0);
+  ret.g = clamp(ret.g * lc, 0.0, 1.0);
+  ret.b = clamp(ret.b * lc, 0.0, 1.0);
+  ret.a = clamp(ret.a * lc, 0.0, 1.0);
   return ret;
 };
 
@@ -272,3 +290,5 @@ for (let x = 0; x < width; x++) {
 }
 
 ctx.putImageData(myImageData, 0, 0);
+
+$("body").append("<h1>" + (new Date()).toTimeString() + "</h1>");

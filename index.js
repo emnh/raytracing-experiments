@@ -146,7 +146,7 @@ const rgbaTest = {
 
 const maxDist = euclid({x: 0, y: 0}, {x: width, y: height});
 
-const samples = 1000.0;
+const samples = 100.0;
 
 const ray = function(x, y, sampleCount, depth) {
 
@@ -195,7 +195,7 @@ const ray = function(x, y, sampleCount, depth) {
 
       }
     }
-    const directMul = i == -1 ? 0.1 : 1.0;
+    const directMul = i == -1 ? 0.5 : 1.0;
 
     if (hit === false) {
       //const edgePoint = { x: 0.0, y: 0.0 };
@@ -209,7 +209,7 @@ const ray = function(x, y, sampleCount, depth) {
           (height - y) / dir.y;
       const dt = Math.min(dx, dy);
       const edgePoint = { x: orig.x + dt * dir.x, y: orig.y + dt * dir.y };
-      lc += 0.1 * ray(edgePoint.x, edgePoint.y, 1, depth + 1) / sampleCount;
+      lc += 0.75 * ray(edgePoint.x, edgePoint.y, 1, depth + 1) / sampleCount;
     } else if (hitObj.type == "light") {
       const d = 1.0 - euclid(hit, { x: x, y: y }) / maxDist;
       lc += directMul * d / sampleCount;

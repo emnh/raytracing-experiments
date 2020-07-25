@@ -1,0 +1,9 @@
+{
+  "name": "js-b9bwri",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "jquery": "3.5.1",
+    "pixi.js": "^5.3.1"
+  }
+}

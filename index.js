@@ -146,7 +146,7 @@ const rgbaTest = {
 
 const maxDist = euclid({x: 0, y: 0}, {x: width, y: height});
 
-const samples = 100.0;
+const sampleCount = 1;
 
 const ray = function(x, y, sampleCount, depth) {
 
@@ -222,7 +222,7 @@ const rgbaLight = {
   r: (x, y) => 1.0,
   g: (x, y) => 1.0,
   b: (x, y) => 1.0,
-  a: (x, y) => ray(x, y, 10, 0)
+  a: (x, y) => ray(x, y, sampleCount, 0)
 };
 
 const rgba = rgbaLight;

@@ -39,7 +39,8 @@ function interceptCircleLineSeg(circle, line){
     if(isNaN(d)){ // no intercept
         return [];
     }
-    u1 = (b - d) / c;  // these represent the unit distance of point one and two on the line
+    u1 = (b - d) / c;  
+    // these represent the unit distance of point one and two on the line
     u2 = (b + d) / c;    
     retP1 = {};   // return points
     retP2 = {}  
@@ -234,7 +235,7 @@ const ray = function(x, y, sampleCount, depth) {
       ret.g += (hitObj.color >>> 8) & 0xFF;
       ret.b += (hitObj.color) & 0xFF;
       ret.a += lc;
-      ret.dist = d2;
+      ret.dist = d;
     } else if (hitObj.type == "solid") {
       const result = ray(hit.x, hit.y, 0, depth + 1) / sampleCount;
       const d2 = euclid(hit, { x: x, y: y }) / maxDist;
@@ -269,7 +270,7 @@ const ray = function(x, y, sampleCount, depth) {
   ret.r = clamp(ret.r * lc, 0.0, 1.0);
   ret.g = clamp(ret.g * lc, 0.0, 1.0);
   ret.b = clamp(ret.b * lc, 0.0, 1.0);
-  ret.a = clamp(ret.a * lc, 0.0, 1.0);
+  ret.a = clamp(ret.dist * ret.a * lc, 0.0, 1.0);
   return ret;
 };
 

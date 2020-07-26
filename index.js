@@ -84,6 +84,13 @@ const circle = {
   type: "solid"
 };
 
+const objects = [
+  { x: 400, y: 100, r: 50, color: 0x0000FF, type: "solid" },
+  { x: 600, y: 500, r: 100, color: 0x00FF00, type: "solid" },
+  circle,
+  light
+];
+
 const dl = function(a, b) {
   graphics.lineStyle(1, 0xFFFFFF, 1);
   graphics.moveTo(a.x, a.y);
@@ -128,12 +135,6 @@ const euclid = function(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-const objects = [
-  { x: 400, y: 100, r: 50, color: 0x0000FF, type: "solid" },
-  circle,
-  light
-];
-
 for (obj of objects) {
   drawCircle(obj);
 }
@@ -161,16 +162,14 @@ const ray = function(x, y, sampleCount, depth) {
   };
 
   if (depth > 4) {
-    return 0.0;
+    return ret;
   }
-
-  let lc = 0.0;
 
   for (let i = -1; i < sampleCount; i++) {
     const angle = 
       i == -1 ?
         Math.atan2(light.y - y, light.x - x) :
-        (i + Math.random()) / sampleCount * 2.0 * Math.PI;
+        2.0 * Math.PI * (i + Math.random()) / sampleCount;
         //(2.0 * Math.PI * (sampleCount * i + Math.random()));
     let hit = false;
     let hitObj = false;
@@ -210,6 +209,8 @@ const ray = function(x, y, sampleCount, depth) {
 
     const lc = 1.0 / sampleCount;
     const f = 1.0; // / sampleCount;
+    
+    // Edge hit
     if (hit === false) {
       //const edgePoint = { x: 0.0, y: 0.0 };
       const dx = 
@@ -227,7 +228,7 @@ const ray = function(x, y, sampleCount, depth) {
       ret.r += result.r;
       ret.g += result.g;
       ret.b += result.b;
-      ret.a = result.a * dt / maxDist;
+      ret.a += (result.a * (1.0 - dt / maxDist) * lc);
       //ret.a += lc * result.a * f;
 
       if (dt == dx) {
@@ -255,17 +256,17 @@ const ray = function(x, y, sampleCount, depth) {
         //ret.a += 1.0 / sampleCount;
         //ret.dist = hitDist;
         //loopdist += hitDist;
-        ret.a += hitDist * lc;
+        ret.a += ((1.0 - hitDist) * lc);
       } else if (hitObj.type == "solid") {
         const result =
           ray(
             Math.round(hit.x + (2.0 * Math.random - 1.0)),
-            Math.round(hit.y + (2.0 * Math.random - 1.0), 0, depth + 1);
+            Math.round(hit.y + (2.0 * Math.random - 1.0)), 0, depth + 1);
         ret.r += 1 * (result.r * f + (hitObj.color >>> 16) & 0xFF);
         ret.g += 1 * (result.g * f + (hitObj.color >>> 8) & 0xFF);
         ret.b += 1 * (result.b * f + (hitObj.color >>> 0) & 0xFF);
         //ret.a += lc * result.a * f;
-        ret.a += result.a * hitDist * lc;
+        ret.a += (result.a * (1.0 - hitDist) * lc);
         //loopdist += result.dist + hitDist;
       } else {
         
@@ -282,10 +283,10 @@ const ray = function(x, y, sampleCount, depth) {
     return Math.min(Math.max(x, a), b);
   };
 
-  ret.r = clamp(ret.r * lc, 0.0, 1.0);
-  ret.g = clamp(ret.g * lc, 0.0, 1.0);
-  ret.b = clamp(ret.b * lc, 0.0, 1.0);
-  ret.a = clamp(ret.a * lc, 0.0, 1.0);
+  ret.r = clamp(ret.r, 0.0, 1.0);
+  ret.g = clamp(ret.g, 0.0, 1.0);
+  ret.b = clamp(ret.b, 0.0, 1.0);
+  ret.a = clamp(ret.a, 0.0, 1.0);
   return ret;
 };
 
